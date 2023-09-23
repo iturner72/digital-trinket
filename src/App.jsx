@@ -25,6 +25,7 @@ function App() {
         console.log("useEffect triggered");
         let customAxes;
         let targetQuaternion = new THREE.Quaternion();
+        let transitioning = false;
 
         const test = new SceneInit('myThreeJsCanvas');
         test.initialize();
@@ -62,10 +63,21 @@ function App() {
 
         // Create a mapping of keys to face index
         const keyToFaceMapping = {
-            KeyO: 0,
-            KeyT: 1,
-            KeyB: 2,
+            KeyI: 0,
         };
+
+        // Get face indicies
+        let currentFaceIndex = 0; 
+
+        function getNextFaceIndex(currentIndex) {
+            return (currentIndex + 1) % customAxes.length; // Cycle through the face indicies
+        }
+
+        function getQuaternionForFace(axis) {
+            const quaternion = new THREE.Quaternion();
+            quaternion.setFromAxisAngle(axis, 0) // Angle is zero because the axis itself represents the orientation
+            return quaternion;
+        }
         
         function updateMaterial() {
             console.log('Updating Material');
@@ -147,9 +159,7 @@ function App() {
             });
         });
 
-
         let customAxisIndex = 0;
-        
         
         const animate = () => {
             const loadedTrinket = loadedTrinketRef.current;
@@ -171,10 +181,18 @@ function App() {
                 if (keyPressed) {
                     // Interpolate between current and target rotation using slerp
                     const currentQuaternion = loadedTrinket.scene.quaternion.clone();
-                    const newQuaternion =  currentQuaternion.slerp(targetQuaternion, 0.55);
+
+                    if (transitioning) {
+                        targetQuaternion = new THREE.Quaternion(); // Identity quaternion
+                        if (currentQuaternion.angleTo(targetQuaternion) < 0.01) {
+                            transitioning = false;
+                        }
+                    }
+                    const newQuaternion =  currentQuaternion.slerp(targetQuaternion, 0.05);
+
                     loadedTrinket.scene.setRotationFromQuaternion(newQuaternion);
 
-                if (currentQuaternion.angleTo(targetQuaternion) < 0.01) {
+                if (currentQuaternion.angleTo(targetQuaternion) < 0.22) {
                     keyPressed = false;
                     }
                 }
@@ -197,12 +215,11 @@ function App() {
             const customAxes = customAxesRef.current;
 
             if (faceIndex !== undefined && customAxes) {
-                console.log("Setting targetQuaternion");
-                const axis = customAxes[faceIndex];
-                const angle = randomRotation();
-
-                console.log("Debug: ", { axis, targetQuaternion });
-                targetQuaternion.setFromAxisAngle(axis, angle);
+                transitioning = true;
+                currentFaceIndex = getNextFaceIndex(currentFaceIndex); // Update the face index
+                const newAxis = customAxes[currentFaceIndex]; // Get the new axis (face normal)
+                const newQuaternion = getQuaternionForFace(newAxis); // Implement this function to get the quaternion for the given face
+                targetQuaternion.copy(newQuaternion);
                 keyPressed = true;
             }
         });
