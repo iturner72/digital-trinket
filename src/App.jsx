@@ -55,12 +55,6 @@ function App() {
           updateMaterial();
         });       
         
-        // Generate a random rotation for a face 
-        function randomRotation() {
-            console.log('Generating random rotation');
-            return Math.random() * Math.PI * 2;
-        }
-
         // Create a mapping of keys to face index
         const keyToFaceMapping = {
             KeyI: 0,
@@ -98,6 +92,21 @@ function App() {
         }
         
         // Define normals for rotation
+        const faceQuaternions = [
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 1, 0), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 1), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 1, 0).normalize(), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 1).normalize(), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 1).normalize(), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(-1, 0, 0), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, -1, 0), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, -1), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(-1, -1, 0).normalize(), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(-1, 0, -1).normalize(), Math.PI /5),
+            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, -1, -1).normalize(), Math.PI /5),
+        ];
+
         function calculateFaceNormals(gltf) {
             const faceNormals = [];
 
@@ -109,8 +118,13 @@ function App() {
 
                     for (let i = 0; i < positionAttribute.count; i += 3) {
                         const normal = new THREE.Vector3();
-                            normal.fromBufferAttribute(normalAttribute, i);
+                        normal.fromBufferAttribute(normalAttribute, i);
                         faceNormals.push(normal);
+
+                        // Calculate quaternion based on face normal and add to faceQuaternions
+                        const quaternion = new THREE.Quaternion();
+                        quaternion.setFromAxisAngle(normal, 0); // zero angle means it will align with the normal
+                        faceQuaternions.push(quaternion);
                     }
                 }
             });
@@ -158,8 +172,6 @@ function App() {
                 test.scene.add(gltf.scene);
             });
         });
-
-        let customAxisIndex = 0;
         
         const animate = () => {
             const loadedTrinket = loadedTrinketRef.current;
@@ -188,7 +200,7 @@ function App() {
                             transitioning = false;
                         }
                     }
-                    const newQuaternion =  currentQuaternion.slerp(targetQuaternion, 0.05);
+                    const newQuaternion =  currentQuaternion.slerp(targetQuaternion, 0.02);
 
                     loadedTrinket.scene.setRotationFromQuaternion(newQuaternion);
 
@@ -215,11 +227,12 @@ function App() {
             const customAxes = customAxesRef.current;
 
             if (faceIndex !== undefined && customAxes) {
-                transitioning = true;
-                currentFaceIndex = getNextFaceIndex(currentFaceIndex); // Update the face index
-                const newAxis = customAxes[currentFaceIndex]; // Get the new axis (face normal)
-                const newQuaternion = getQuaternionForFace(newAxis); // Implement this function to get the quaternion for the given face
-                targetQuaternion.copy(newQuaternion);
+                // Update currentFaceIndex and wrap it back to 0 if it exceeds 11
+                currentFaceIndex = (currentFaceIndex + 1) % 12;
+
+                // Get the corresponding quaternion from the arry
+                targetQuaternion.copy(faceQuaternions[currentFaceIndex]);
+
                 keyPressed = true;
             }
         });
