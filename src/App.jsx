@@ -91,21 +91,46 @@ function App() {
           }
         }
         
-        // Define normals for rotation
-        const faceQuaternions = [
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 1, 0), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 1), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 1, 0).normalize(), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 1).normalize(), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 1).normalize(), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(-1, 0, 0), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, -1, 0), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, -1), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(-1, -1, 0).normalize(), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(-1, 0, -1).normalize(), Math.PI /5),
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, -1, -1).normalize(), Math.PI /5),
+        // Define the golden ratio
+        const phi = (1 + Math.sqrt(5)) /2;
+
+        // Define vertices of a dodecahedron
+        const vertices = [
+            [1, 1, 1], [-1, 1, 1], [-1, -1, 1], [1, -1, 1],
+            [0, 1/phi, phi], [0, -1/phi, phi], [0, 1/phi, -phi], [0, -1/phi, -phi],
+            [1/phi, phi, 0], [-1/phi, phi, 0], [phi, 0, 1/phi], [-phi, 0, 1/phi],
+            [phi, 0, -1/phi], [-phi, 0, -1/phi] [1/phi, -phi, 0], [-1/phi, -phi, 0]
         ];
+
+        // Define faces of a dodecahedron
+        const faces = [
+            [0, 8, 4, 14, 12], [0, 12, 10, 2, 6], [0, 6, 7, 9, 8],
+            [1, 3, 11, 10, 12], [1, 12, 14, 5, 13], [1, 13, 15, 7, 3],
+            [2, 10, 11, 3, 7], [2, 7, 15, 13, 5], [2, 5, 14, 4, 6],
+            [4, 8, 9, 1, 13], [4, 13, 5, 14, 12], [6, 2, 7, 9, 8]
+        ];
+
+        // Compute face normals and convert to quaternions
+        const faceQuaternions = faces.map(face => {
+            if (vertices[face[0]] && vertices[face[1]] && vertices[face[2]]) {
+            const a = new THREE.Vector3(vertices[face[0]][0], vertices[face[0]][1], vertices[face[0]][2]);
+            const b = new THREE.Vector3(vertices[face[1]][0], vertices[face[1]][1], vertices[face[1]][2]);
+            const c = new THREE.Vector3(vertices[face[2]][0], vertices[face[2]][1], vertices[face[2]][2]);
+            
+            const normal = new THREE.Vector3();
+            normal.crossVectors(
+                new THREE.Vector3().subVectors(b, a),
+                new THREE.Vector3().subVectors(c, a)
+            ).normalize();
+            
+              return new THREE.Quaternion().setFromAxisAngle(normal, Math.PI / 5);
+            } else {
+                console.error("Undefined vertix encountered.");
+                return new THREE.Quaternion();
+            }
+        });
+        
+
 
         function calculateFaceNormals(gltf) {
             const faceNormals = [];
@@ -189,19 +214,20 @@ function App() {
                 loadedTrinket.scene.position.y -= centroid.y;
                 loadedTrinket.scene.position.z -= centroid.z;
 
+                let targetIndex = 0; // Index to keep track of the current target quaternion
 
                 if (keyPressed) {
                     // Interpolate between current and target rotation using slerp
                     const currentQuaternion = loadedTrinket.scene.quaternion.clone();
 
                     if (transitioning) {
-                        targetQuaternion = new THREE.Quaternion(); // Identity quaternion
+                        targetQuaternion = faceQuaternions[targetIndex]; 
                         if (currentQuaternion.angleTo(targetQuaternion) < 0.01) {
                             transitioning = false;
+                            targetIndex = (targetIndex + 1) % 12; // Move to the next target quaternion
                         }
                     }
                     const newQuaternion =  currentQuaternion.slerp(targetQuaternion, 0.02);
-
                     loadedTrinket.scene.setRotationFromQuaternion(newQuaternion);
 
                 if (currentQuaternion.angleTo(targetQuaternion) < 0.22) {
