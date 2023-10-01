@@ -171,6 +171,9 @@ function App() {
             test.scene.environment = texture; // use hdr background for lighting...
             // ... rather than ambient, directional, or point lighting 
             
+            // Black background for portfolio
+//            test.scene.background = new THREE.Color(0x000000);
+            
 
             // Load DRACO compressed trinket 
             const dracoLoader = new DRACOLoader();
