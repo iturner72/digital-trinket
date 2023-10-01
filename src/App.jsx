@@ -4,8 +4,9 @@ import { GUI } from 'dat.gui';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-
 import SceneInit from './lib/SceneInit';
+import modelPath from '../assets/trinket/digital_trinket_draco.glb';
+
 
 function App() {
     const [resetFunc, setResetFunc] = useState(false);
@@ -178,7 +179,7 @@ function App() {
             // Load trinket and hdr background
             const gltfLoader = new GLTFLoader();
             gltfLoader.setDRACOLoader(dracoLoader);
-            gltfLoader.load('./../assets/trinket/digital_trinket_draco.glb', ( gltf ) => {
+            gltfLoader.load(modelPath, ( gltf ) => {
                 console.log("Inside GLTFLoader callback, GLTF is:", gltf);
                 loadedTrinketRef.current = gltf;
                 
