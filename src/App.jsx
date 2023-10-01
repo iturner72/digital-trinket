@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import * as THREE from 'three';
 import { GUI } from 'dat.gui';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 
 import SceneInit from './lib/SceneInit';
@@ -170,9 +171,14 @@ function App() {
             // ... rather than ambient, directional, or point lighting 
             
 
+            // Load DRACO compressed trinket 
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('/draco/');
+
             // Load trinket and hdr background
             const gltfLoader = new GLTFLoader();
-            gltfLoader.load('./../assets/trinket/digital_trinket_final.glb', ( gltf ) => {
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.load('./../assets/trinket/digital_trinket_draco.glb', ( gltf ) => {
                 console.log("Inside GLTFLoader callback, GLTF is:", gltf);
                 loadedTrinketRef.current = gltf;
                 
